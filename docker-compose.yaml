@@ -34,8 +34,10 @@ x-airflow-common:
     - ./dags:/opt/airflow/dags
     - ./logs:/opt/airflow/logs
     - ./plugins:/opt/airflow/plugins
+    # Needed for DockerOperator to work
     - /var/run/docker.sock:/var/run/docker.sock
 
+  # Needed for DockerOperator to work. Can also be set as "airflow" but then it require more set-up in the dockers files.
   user: "root"
   depends_on:
     &airflow-common-depends-on
