@@ -1,1 +1,2 @@
 selenium
+azure-storage-blob

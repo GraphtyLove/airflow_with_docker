@@ -1,1 +1,2 @@
 pandas
+azure-storage-blob

@@ -1,7 +1,8 @@
 FROM python:3.10
 
 RUN mkdir /app
-COPY . /app
+COPY data_cleaner/* /app
+COPY common.py /app
 
 WORKDIR /app
 

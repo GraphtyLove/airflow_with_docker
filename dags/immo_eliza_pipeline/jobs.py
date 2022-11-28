@@ -4,6 +4,9 @@ from airflow.operators.bash_operator import BashOperator
 from airflow.operators.docker_operator import DockerOperator
 from airflow.operators.python_operator import BranchPythonOperator
 from airflow.operators.dummy_operator import DummyOperator
+from uuid import uuid4
+import os
+
 
 default_args = {
     'owner'                 : 'airflow',
@@ -17,6 +20,9 @@ default_args = {
 }
 
 with DAG('immo-eliza-pipeline', default_args=default_args, schedule_interval="30 * * * *", catchup=False) as dag:
+
+    pipeline_id = str(uuid4())
+
     start_dag = DummyOperator(
         task_id='start_dag'
         )
@@ -33,7 +39,12 @@ with DAG('immo-eliza-pipeline', default_args=default_args, schedule_interval="30
         auto_remove=True,
         # command="/bin/sleep 30",
         docker_url="unix://var/run/docker.sock",
-        network_mode="bridge"
+        network_mode="bridge",
+        environment={
+            "AZURE_CONNECTION_STRING": os.getenv("AZURE_CONNECTION_STRING"),
+            "AZURE_CONTAINER_NAME": os.getenv("AZURE_CONTAINER_NAME"),
+            "PIPELINE_ID": pipeline_id
+        }
         )
 
     t2 = DockerOperator(
@@ -44,7 +55,13 @@ with DAG('immo-eliza-pipeline', default_args=default_args, schedule_interval="30
         auto_remove=True,
         # command="/bin/sleep 30",
         docker_url="unix://var/run/docker.sock",
-        network_mode="bridge"
+        network_mode="bridge",
+        
+        environment= {
+            "AZURE_CONNECTION_STRING": os.getenv("AZURE_CONNECTION_STRING"),
+            "AZURE_CONTAINER_NAME": os.getenv("AZURE_CONTAINER_NAME"),
+            "PIPELINE_ID": pipeline_id
+        }
         )
 
     t3 = BashOperator(
