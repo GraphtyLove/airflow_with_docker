@@ -31,7 +31,7 @@ with DAG('immo-eliza-pipeline', default_args=default_args, schedule_interval="30
         task_id='end_dag'
         )        
         
-    t1 = DockerOperator(
+    task_1 = DockerOperator(
         task_id='scraping',
         image='airflow_scraper:latest',
         container_name='task___scraper',
@@ -47,7 +47,7 @@ with DAG('immo-eliza-pipeline', default_args=default_args, schedule_interval="30
         }
         )
 
-    t2 = DockerOperator(
+    task_2 = DockerOperator(
         task_id='cleaning',
         image='airflow_data_cleaner:latest',
         container_name='task___cleaning',
@@ -64,13 +64,13 @@ with DAG('immo-eliza-pipeline', default_args=default_args, schedule_interval="30
         }
         )
 
-    t3 = BashOperator(
+    task_3 = BashOperator(
         task_id='print_done',
         bash_command='echo "All done!"'
     )
 
-    start_dag >> t1 
+    start_dag >> task_1 
     
-    t1 >> t2 >> t3
+    task_1 >> task_2 >> task_3
 
-    t3 >> end_dag
+    task_3 >> end_dag
