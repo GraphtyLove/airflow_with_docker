@@ -17,17 +17,28 @@ def scrape() -> str:
     return page_html
 
 
+
 if __name__ == '__main__':
+    # Check env variable
+    try:
+        pipeline_id = os.environ["CUSTOM_PIPELINE_ID"]
+        print("Pipeline ID: ", pipeline_id)
+    except KeyError as missing_variable:
+        raise ValueError(f"Missing environment variable: {missing_variable}")
+
+    # Create a file name with the pipeline ID
+    file_name = f"houses_{pipeline_id}.html"
+
     print("scrapping...")
     houses = scrape()
     print("scrapping Done")
 
+    print("Saving file to local temp folder...")
+    file_path = f"/tmp/{file_name}"
+    with open(file_path, "w") as file:
+        file.write(houses)
+    print("Saving file to local Done")
+
     print("uploading...")
-    pipeline_id  = os.getenv("PIPELINE_ID")
-    if not pipeline_id:
-        raise ValueError("Pipeline ID not found")
-    print("Pipeline ID: ", pipeline_id)
-    print("Debug print")
-    
-    upload_file(houses, f"houses_{pipeline_id}.html")
+    upload_file(file_path, file_name)
     print("uploading Done")

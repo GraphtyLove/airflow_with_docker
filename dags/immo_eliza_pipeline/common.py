@@ -1,5 +1,24 @@
-from azure.storage.blob import BlobServiceClient
 import os
+from typing import Tuple
+from azure.storage.blob import BlobServiceClient
+
+
+
+def get_enviroment_variables() -> Tuple[str, str]:
+    """
+    return the environment variables if they are set. If not, raise an error.
+    """
+
+    connection_string = os.getenv("AZURE_CONNECTION_STRING")
+    container_name = os.getenv("AZURE_CONTAINER_NAME")
+    if not connection_string:
+        raise ValueError("AZURE_CONNECTION_STRING not found. Check your .env file")
+    elif not container_name:
+        raise ValueError("AZURE_CONTAINER_NAME not found. Check your .env file")    
+
+    print("Environment variables are set:")
+
+    return connection_string, container_name
 
 
 def upload_file(local_file_path: str, blob_name: str) -> None:
@@ -11,17 +30,12 @@ def upload_file(local_file_path: str, blob_name: str) -> None:
     """
     
     # Load environment variables
-    connection_string = os.getenv("AZURE_CONNECTION_STRING")
-    container_name = os.getenv("STORAGE_CONTAINER")
-
-    # Raise an error if the environment variables are not found
-    if not connection_string or not container_name:
-        raise ValueError("Missing environment variables... Please check your .env file")
+    connection_string, container_name = get_enviroment_variables()
 
     # Initialize the connection to Azure
     blob_service_client =  BlobServiceClient.from_connection_string(connection_string)
-    
-    # Create blob (file) with same name as local file name (But you )
+
+    # Create the client to interact with the Azure Storage Container
     blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob_name)
     
     print(f"uploading file: {local_file_path}....")
@@ -47,18 +61,12 @@ def download_file(local_file_desired_path: str, blob_name: str) -> str:
     """
 
     # Load environment variables
-    connection_string = os.getenv("AZURE_CONNECTION_STRING")
-    container_name = os.getenv("STORAGE_CONTAINER")
+    connection_string, container_name = get_enviroment_variables()
 
-    # Raise an error if the environment variables are not found
-    if not connection_string or not container_name:
-        raise ValueError("Missing environment variables... Please check your .env file")
-
-
-    # Initialize the connection to Azure
-    blob_service_client =  BlobServiceClient.from_connection_string(connection_string)
+    # Initialize the connection to Azure Storage Container
+    blob_service_client = BlobServiceClient.from_connection_string(connection_string)
     
-    # Create blob (file) with same name as local file name
+    # Create the client to interact with the Azure Storage Container
     blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob_name)
     
     print(f"Downloading file: {blob_name}...")

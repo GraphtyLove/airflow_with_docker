@@ -16,7 +16,7 @@ default_args = {
     'email_on_failure'      : False,
     'email_on_retry'        : False,
     'retries'               : 1,
-    'retry_delay'           : timedelta(minutes=5)
+    'retry_delay'           : timedelta(minutes=1)
 }
 
 with DAG('immo-eliza-pipeline', default_args=default_args, schedule_interval="30 * * * *", catchup=False) as dag:
@@ -43,7 +43,7 @@ with DAG('immo-eliza-pipeline', default_args=default_args, schedule_interval="30
         environment={
             "AZURE_CONNECTION_STRING": os.getenv("AZURE_CONNECTION_STRING"),
             "AZURE_CONTAINER_NAME": os.getenv("AZURE_CONTAINER_NAME"),
-            "PIPELINE_ID": pipeline_id
+            "CUSTOM_PIPELINE_ID": pipeline_id
         }
         )
 
@@ -60,7 +60,7 @@ with DAG('immo-eliza-pipeline', default_args=default_args, schedule_interval="30
         environment= {
             "AZURE_CONNECTION_STRING": os.getenv("AZURE_CONNECTION_STRING"),
             "AZURE_CONTAINER_NAME": os.getenv("AZURE_CONTAINER_NAME"),
-            "PIPELINE_ID": pipeline_id
+            "CUSTOM_PIPELINE_ID": pipeline_id
         }
         )
 

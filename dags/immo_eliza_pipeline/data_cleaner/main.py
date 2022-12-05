@@ -4,7 +4,8 @@ import os
 def clean() -> str:
     print("Cleaning...")
     
-    pipeline_id  = os.getenv("PIPELINE_ID")
+    # Check pipeline ID
+    pipeline_id  = os.getenv("CUSTOM_PIPELINE_ID")
     if not pipeline_id:
         raise ValueError("Pipeline ID not found")
     
