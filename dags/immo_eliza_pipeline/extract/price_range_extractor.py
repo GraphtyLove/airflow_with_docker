@@ -91,6 +91,7 @@ def is_cached_price_ranges_valide() -> bool:
                     return False
     return True
 
+
 def load_cached_price_ranges() -> List[List[float | int]]:
     
     with open("price_ranges.csv", 'r') as file:

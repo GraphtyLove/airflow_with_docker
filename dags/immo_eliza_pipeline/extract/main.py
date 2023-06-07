@@ -13,10 +13,6 @@ WINE_PER_PAGE = 50
 HEADER = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"}
 
 
-
-
-
-
 def get_wines_from_page(
     page_number: int = 1,
     session: requests.Session | None = None, 
