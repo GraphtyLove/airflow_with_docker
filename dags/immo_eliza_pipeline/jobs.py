@@ -4,6 +4,10 @@ from airflow.operators.bash_operator import BashOperator
 from airflow.operators.docker_operator import DockerOperator
 from airflow.operators.python_operator import BranchPythonOperator
 from airflow.operators.dummy_operator import DummyOperator
+from dotenv import load_dotenv
+
+load_dotenv(".env")
+
 
 default_args = {
     'owner'                 : 'airflow',
@@ -34,6 +38,10 @@ with DAG('immo-eliza-pipeline', default_args=default_args, schedule_interval="30
         # command="/bin/sleep 30",
         docker_url="unix://var/run/docker.sock",
         network_mode="bridge"
+	environement={
+		"AZURE_CONNECTION_STRING": os.getenv("AZURE_CONNECTION_STRING"),
+		"STORAGE_CONTAINER": os.getenv("STORAGE_CONTAINER")
+	}
         )
 
     t2 = DockerOperator(
