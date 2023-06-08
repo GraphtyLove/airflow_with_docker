@@ -1,55 +1,125 @@
-import sqlite3
 import json
+from schema import (
+    Country,
+    Region,
+    Grape,
+    Winery,
+    Wine,
+    Vintage,
+    Keyword,
+    FlavorGroup,
+    TopList,
+)
+import json
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
-# Load data from JSON file
-with open('data.json') as file:
-    data = json.load(file)
 
-# Connect to SQLite database
-conn = sqlite3.connect('wine_data.db')
-cursor = conn.cursor()
+# Initiate a session
+engine = create_engine("sqlite:///vivino.db")
+Session = sessionmaker(bind=engine)
 
-# Create tables
-with open('create_tables.sql') as file:
-    create_table_statements = file.read()
 
-cursor.executescript(create_table_statements)
-conn.commit()
+def populate_database(json_path: str = "data_cleaned.json") -> None:
+    # Load json
+    with open(json_path, "r") as file:
+        wines = json.load(file)
 
-# Insert data into tables
-for entry in data:
-    # Insert data into 'wine' table
-    wine_values = (
-        entry.get('id'),
-        entry.get('name'),
-        entry.get('type'),
-        entry.get('region'),
-        entry.get('country'),
-        entry.get('description')
-    )
-    insert_wine = "INSERT INTO wine VALUES (?, ?, ?, ?, ?, ?);"
-    cursor.execute(insert_wine, wine_values)
+    session = Session()
+    # Loop over each entry
+    for entry in wines:
+        vintage_data = entry["vintage"]
+        price_data = entry["price"]
+        wine_data = vintage_data["wine"]
+        region_data = wine_data["region"]
+        country_data = region_data["country"]
+        winery_data = wine_data["winery"]
+        taste_data = wine_data["taste"]["structure"]
+        flavors = wine_data["taste"]["flavor"]
+        top_lists_data = vintage_data.get("top_list_rankings")
 
-    # Insert data into 'rating' table
-    rating_values = (
-        entry.get('id'),
-        entry.get('rating', {}).get('average_score'),
-        entry.get('rating', {}).get('num_reviews')
-    )
-    insert_rating = "INSERT INTO rating VALUES (?, ?, ?);"
-    cursor.execute(insert_rating, rating_values)
+        # --- Create keywords ---
+        for group in flavors:
+            for keyword in group["primary_keywords"]:
+                add_keyword = Keyword(id=keyword["id"], name=keyword["name"])
+                session.add(add_keyword)
+            for keyword in group["secondary_keywords"]:
+                add_keyword = Keyword(id=keyword["id"], name=keyword["name"])
+                session.add(add_keyword)
+            # --- Create Groups ---
+            add_flavor_group = FlavorGroup(group=group["group"])
+            session.add(add_flavor_group)
 
-    # Insert data into 'taste_flavor' table
-    for flavor in entry.get('taste_flavor', []):
-        flavor_values = (
-            entry.get('id'),
-            flavor.get('group'),
-            flavor.get('flavor_count'),
-            flavor.get('flavor_score')
+        # --- Create Winery ---
+        add_winery = Winery(id=wine_data["id"], name=wine_data["name"])
+        session.add(add_winery)
+
+        # --- Create Grape ---
+        country_grapes = []
+        for grape in country_data["must_used_grapes"]:
+            add_grape = Grape(
+                id=grape["id"], name=grape["name"], wines_count=grape["wines_count"]
+            )
+            country_grapes.append(add_grape)
+            session.add(add_grape)
+
+        # --- Create Country ---
+        add_country = Country(
+            code=country_data["code"],
+            name=country_data["name"],
+            regions_count=country_data["regions_count"],
+            users_count=country_data["users_count"],
+            wines_counts=country_data["wines_counts"],
+            wineries_count=country_data["wineries_count"],
+            most_used_grapes=country_grapes,
         )
-        insert_taste_flavor = "INSERT INTO taste_flavor VALUES (?, ?, ?, ?);"
-        cursor.execute(insert_taste_flavor, flavor_values)
+        session.add(add_country)
 
-# Commit the changes and close the connection
-conn.commit()
-conn.close()
+        # --- Create Region---
+        add_region = Region(
+            id=region_data["id"],
+            name=region_data["name"],
+            country_code=region_data["country_code"],
+        )
+        session.add(add_region)
+
+        # --- Create Wine ---
+        add_wine = Wine(
+            id=wine_data["id"],
+            name=wine_data["name"],
+            is_natural=wine_data["is_natural"],
+            region_id=region_data["id"],
+            winery_id=winery_data["id"],
+            acidity=taste_data["acidity"],
+            fizziness=taste_data["fizziness"],
+            intensity=taste_data["intensity"],
+            sweetness=taste_data["sweetness"],
+            tannin=taste_data["tannin"],
+            structure_user_count=taste_data["structure_user_count"],
+        )
+        session.add(add_wine)
+
+        # --- Create Vintage ---
+        add_vintage = Vintage(
+            id=vintage_data["id"], name=vintage_data["name"], wine_id=wine_data["id"]
+        )
+        session.add(add_vintage)
+
+        # --- Create Toplist---
+        if top_lists_data:
+            for top_list in top_list_data:
+                add_top_list = TopList(
+                    id=top_list["top_list"]["id"],
+                    name=top_list["top_list"]["name"],
+                    wines=wine_data["name"],
+                )
+                session.add(add_top_list)
+
+    print("Adding wine to DB...")
+    # Commit the session to write the changes to the database
+    session.commit()
+    print("done")
+
+
+if __name__ == "__main__":
+    populate_database()

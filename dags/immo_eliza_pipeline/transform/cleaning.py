@@ -130,4 +130,8 @@ def preprocess():
     # Save final data
     save_file(wines, "../../../data_cleaned.json")
     # Save sample data
-    save_file(wines[:10], "../../../data_cleaned_sample.json")
+    save_file(wines[:2], "../../../data_cleaned_sample.json")
+
+
+if __name__ == "__main__":
+    preprocess()

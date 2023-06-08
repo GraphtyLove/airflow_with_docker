@@ -79,7 +79,7 @@ def get_price_ranges(
 
     return price_ranges
 
-
+# TODO: Remove e
 def is_cached_price_ranges_valide() -> bool:
     price_range_to_update = []
     with open("price_ranges.csv", "r") as file:
