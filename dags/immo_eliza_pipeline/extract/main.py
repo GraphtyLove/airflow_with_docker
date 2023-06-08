@@ -2,7 +2,6 @@ import requests
 import json
 import time
 import os
-from typing import List, Tuple
 from price_range_extractor import get_price_ranges, is_cached_price_ranges_valide, load_cached_price_ranges
 # import itertools
 # from tqdm.contrib.concurrent import thread_map

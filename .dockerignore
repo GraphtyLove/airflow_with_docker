@@ -8,6 +8,8 @@ Dockerfile
 # ----- Env variables -----
 .env
 .env.*
+# ----- Python -----
+venv*
 
 # ----- Documentation -----
 README.md
@@ -19,6 +21,11 @@ README.md
 *.pyc
 *__pycache__*
 
+
+
+# User-specific stuff
+.idea/*
+.vscode
 
 # ----- OS X -----
 .DS_Store
