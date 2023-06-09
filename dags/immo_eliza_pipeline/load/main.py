@@ -1,5 +1,5 @@
 import json
-from schema import (
+from dags.immo_eliza_pipeline.load.schema import (
     Country,
     Region,
     Grape,
@@ -11,7 +11,7 @@ from schema import (
     TopList,
 )
 import json
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, MetaData
 from sqlalchemy.orm import sessionmaker
 
 
@@ -21,13 +21,22 @@ Session = sessionmaker(bind=engine)
 
 
 def populate_database(json_path: str = "data_cleaned.json") -> None:
+    print("Creating database...")
+    meta = MetaData()
+    meta.create_all(engine)
+    print("Database created.")
+
+    print("Populating database...")
+    print("Loading json...")
     # Load json
     with open(json_path, "r") as file:
         wines = json.load(file)
+    print("Json loaded.")
 
     session = Session()
     # Loop over each entry
-    for entry in wines:
+    for i_entry, entry in enumerate(wines):
+        print(f"Processing entry {i_entry+1}/{len(wines)}...")
         vintage_data = entry["vintage"]
         price_data = entry["price"]
         wine_data = vintage_data["wine"]
@@ -39,13 +48,17 @@ def populate_database(json_path: str = "data_cleaned.json") -> None:
         top_lists_data = vintage_data.get("top_list_rankings")
 
         # --- Create keywords ---
-        for group in flavors:
-            for keyword in group["primary_keywords"]:
-                add_keyword = Keyword(id=keyword["id"], name=keyword["name"])
-                session.add(add_keyword)
-            for keyword in group["secondary_keywords"]:
-                add_keyword = Keyword(id=keyword["id"], name=keyword["name"])
-                session.add(add_keyword)
+        for i_group, group in enumerate(flavors):
+            print(f"Entry {i_entry+1}/{len(wines)} | Processing flavor group {i_group+1}/{len(flavors)}...")
+            if group.get("primary_keywords"):
+                for keyword in group["primary_keywords"]:
+                    add_keyword = Keyword(id=keyword["id"], name=keyword["name"])
+                    session.add(add_keyword)
+            if group.get("secondary_keywords"):
+                for keyword in group["secondary_keywords"]:
+                    add_keyword = Keyword(id=keyword["id"], name=keyword["name"])
+                    session.add(add_keyword)
+
             # --- Create Groups ---
             add_flavor_group = FlavorGroup(group=group["group"])
             session.add(add_flavor_group)
@@ -56,12 +69,15 @@ def populate_database(json_path: str = "data_cleaned.json") -> None:
 
         # --- Create Grape ---
         country_grapes = []
-        for grape in country_data["must_used_grapes"]:
-            add_grape = Grape(
-                id=grape["id"], name=grape["name"], wines_count=grape["wines_count"]
-            )
-            country_grapes.append(add_grape)
-            session.add(add_grape)
+        if country_data.get("must_used_grapes"):
+            for i_grape, grape in enumerate(country_data["must_used_grapes"]):
+                print(f"Entry {i_entry+1}/{len(wines)} | Processing grape {i_grape+1}"
+                      f"/{len(country_data['must_used_grapes'])}...")
+                add_grape = Grape(
+                    id=grape["id"], name=grape["name"], wines_count=grape["wines_count"]
+                )
+                country_grapes.append(add_grape)
+                session.add(add_grape)
 
         # --- Create Country ---
         add_country = Country(
@@ -69,7 +85,7 @@ def populate_database(json_path: str = "data_cleaned.json") -> None:
             name=country_data["name"],
             regions_count=country_data["regions_count"],
             users_count=country_data["users_count"],
-            wines_counts=country_data["wines_counts"],
+            wines_count=country_data["wines_count"],
             wineries_count=country_data["wineries_count"],
             most_used_grapes=country_grapes,
         )
@@ -79,7 +95,7 @@ def populate_database(json_path: str = "data_cleaned.json") -> None:
         add_region = Region(
             id=region_data["id"],
             name=region_data["name"],
-            country_code=region_data["country_code"],
+            country_code=country_data["code"],
         )
         session.add(add_region)
 
@@ -90,12 +106,12 @@ def populate_database(json_path: str = "data_cleaned.json") -> None:
             is_natural=wine_data["is_natural"],
             region_id=region_data["id"],
             winery_id=winery_data["id"],
-            acidity=taste_data["acidity"],
-            fizziness=taste_data["fizziness"],
-            intensity=taste_data["intensity"],
-            sweetness=taste_data["sweetness"],
-            tannin=taste_data["tannin"],
-            structure_user_count=taste_data["structure_user_count"],
+            acidity=taste_data["acidity"] if taste_data else None,
+            fizziness=taste_data["fizziness"] if taste_data else None,
+            intensity=taste_data["intensity"] if taste_data else None,
+            sweetness=taste_data["sweetness"] if taste_data else None,
+            tannin=taste_data["tannin"] if taste_data else None,
+            user_structure_count=taste_data["user_structure_count"] if taste_data else None,
         )
         session.add(add_wine)
 
@@ -107,11 +123,13 @@ def populate_database(json_path: str = "data_cleaned.json") -> None:
 
         # --- Create Toplist---
         if top_lists_data:
-            for top_list in top_list_data:
+            for i_top_list, top_list in enumerate(top_lists_data):
+                print(f"Entry {i_entry+1}/{len(wines)} | Processing top list {i_top_list+1}/{len(top_lists_data)}...")
                 add_top_list = TopList(
                     id=top_list["top_list"]["id"],
                     name=top_list["top_list"]["name"],
-                    wines=wine_data["name"],
+                    # TODO: To be update to append instead of overwrite
+                    wines=[add_wine],
                 )
                 session.add(add_top_list)
 

@@ -13,6 +13,21 @@ from sqlalchemy.orm import relationship, declarative_base
 
 Base = declarative_base()
 
+# ------ Define the Association Tables ------
+toplist_wine = Table(
+    "toplist_wine",
+    Base.metadata,
+    Column("toplist_id", Integer, ForeignKey("toplists.id"), primary_key=True),
+    Column("wine_id", Integer, ForeignKey("wines.id"), primary_key=True),
+)
+
+flavor_group_keywords = Table(
+    "flavor_group_keywords",
+    Base.metadata,
+    Column("flavor_group_group", String, ForeignKey("flavor_groups.group")),
+    Column("keyword_id", Integer, ForeignKey("keywords.id")),
+)
+
 
 class Country(Base):
     __tablename__ = "countries"
@@ -58,7 +73,8 @@ class Wine(Base):
     intensity = Column(Float)
     sweetness = Column(Float)
     tannin = Column(Float)
-    structure_user_count = Column(Integer)
+    user_structure_count = Column(Integer)
+    toplists = relationship("TopList", secondary=toplist_wine, back_populates="wines")
 
 
 class Vintage(Base):
@@ -80,8 +96,8 @@ class FlavorGroup(Base):
     count = Column(Integer)
     score = Column(Integer)
     vintage_id = Column(Integer, ForeignKey("vintages.id"))
-    primary_keywords = relationship("Keyword")
-    secondary_keywords = relationship("Keyword")
+    primary_keywords = relationship("Keyword", secondary=flavor_group_keywords, backref="primary_flavor_groups")
+    secondary_keywords = relationship("Keyword", secondary=flavor_group_keywords, backref="secondary_flavor_groups")
 
 
 class TopList(Base):
@@ -91,14 +107,6 @@ class TopList(Base):
     name = Column(String(255), nullable=False)
     wines = relationship("Wine", secondary="toplist_wine", back_populates="toplists")
 
-
-# Define the Association Table
-toplist_wine = Table(
-    "toplist_wine",
-    Base.metadata,
-    Column("toplist_id", Integer, ForeignKey("toplists.id"), primary_key=True),
-    Column("wine_id", Integer, ForeignKey("wines.id"), primary_key=True),
-)
 
 if __name__ == "__main__":
     engine = create_engine("sqlite:///vivino.db", echo=True)
