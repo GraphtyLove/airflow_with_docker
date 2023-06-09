@@ -21,14 +21,8 @@ toplist_wine = Table(
     Column("wine_id", Integer, ForeignKey("wines.id"), primary_key=True),
 )
 
-flavor_group_keywords = Table(
-    "flavor_group_keywords",
-    Base.metadata,
-    Column("flavor_group_group", String, ForeignKey("flavor_groups.group")),
-    Column("keyword_id", Integer, ForeignKey("keywords.id")),
-)
 
-
+# ------ Define Tables schemas ------
 class Country(Base):
     __tablename__ = "countries"
     code = Column(String, primary_key=True)
@@ -68,6 +62,9 @@ class Wine(Base):
     is_natural = Column(Boolean)
     region_id = Column(Integer, ForeignKey("regions.id"))
     winery_id = Column(Integer, ForeignKey("wineries.id"))
+    ratings_average = Column(Float)
+    ratings_count = Column(Integer)
+    url = Column(String)
     acidity = Column(Float)
     fizziness = Column(Float)
     intensity = Column(Float)
@@ -75,6 +72,7 @@ class Wine(Base):
     tannin = Column(Float)
     user_structure_count = Column(Integer)
     toplists = relationship("TopList", secondary=toplist_wine, back_populates="wines")
+    flavor_groups = relationship("FlavorGroup", backref="wine")
 
 
 class Vintage(Base):
@@ -82,22 +80,37 @@ class Vintage(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String)
     wine_id = Column(Integer, ForeignKey("wines.id"))
+    ratings_average = Column(Float)
+    ratings_count = Column(Integer)
+    year = Column(Integer)
+    price_euros = Column(Float)
+    price_discounted_from = Column(Float)
+    price_discount_percentage = Column(Float)
+    bottle_volume_ml = Column(Integer)
 
 
 class Keyword(Base):
     __tablename__ = "keywords"
     id = Column(Integer, primary_key=True)
     name = Column(String)
+    count = Column(Integer)
+    keyword_type = Column(String) # primary or secondary
+    flavor_group_id = Column(Integer, ForeignKey('flavor_groups.id'))
+
+    # relationship to FlavorGroup
+    flavor_group = relationship("FlavorGroup", back_populates="keywords")
 
 
 class FlavorGroup(Base):
     __tablename__ = "flavor_groups"
-    group = Column(String, primary_key=True)
-    count = Column(Integer)
-    score = Column(Integer)
-    vintage_id = Column(Integer, ForeignKey("vintages.id"))
-    primary_keywords = relationship("Keyword", secondary=flavor_group_keywords, backref="primary_flavor_groups")
-    secondary_keywords = relationship("Keyword", secondary=flavor_group_keywords, backref="secondary_flavor_groups")
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    group_name = Column(String)
+    wine_id = Column(Integer, ForeignKey('wines.id'))
+    # Relationships
+    wines = relationship("Wine", back_populates="flavor_groups")
+    keywords = relationship("Keyword", back_populates="flavor_group")
+    # primary_keywords = relationship("Keyword", secondary=flavor_group_keywords, backref="primary_flavor_groups")
+    # secondary_keywords = relationship("Keyword", secondary=flavor_group_keywords, backref="secondary_flavor_groups")
 
 
 class TopList(Base):

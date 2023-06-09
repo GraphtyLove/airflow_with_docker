@@ -29,8 +29,14 @@ def remove_useless_fields(wines: dict) -> dict:
         wine.pop("prices", True)
         # vintage
         vintage_keys_to_remove = ["seo_name", "image", "grapes", "has_valid_ratings"]
+
         for key in vintage_keys_to_remove:
             wine["vintage"].pop(key, True)
+        # Vintage stats - Remove those keys as they are already in the wine object
+        vintage_stats_keys_to_remove = ["wine_ratings_count", "wine_ratings_average", "wine_status"]
+        for key in vintage_stats_keys_to_remove:
+            wine["vintage"]["statistics"].pop(key, True)
+
         # Wine
         wine_keys_to_remove = [
             "seo_name",

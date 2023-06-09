@@ -1,4 +1,8 @@
 import json
+import time
+from collections import defaultdict
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 from dags.immo_eliza_pipeline.load.schema import (
     Country,
     Region,
@@ -10,15 +14,30 @@ from dags.immo_eliza_pipeline.load.schema import (
     FlavorGroup,
     TopList,
 )
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-
 
 # Initiate a session
 engine = create_engine("sqlite:///vivino.db")
 Session = sessionmaker(bind=engine)
 
 
+def execution_time_decorator(func):
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        execution_time = end_time - start_time
+
+        hours = int(execution_time // 3600)
+        minutes = int((execution_time % 3600) // 60)
+        seconds = int(execution_time % 60)
+
+        print(f"Execution time: {hours}h {minutes}m {seconds}s")
+        return result
+
+    return wrapper
+
+
+@execution_time_decorator
 def populate_database(json_path: str = "data_cleaned.json") -> None:
     print("Populating database...")
     print("Loading json...")
@@ -28,6 +47,17 @@ def populate_database(json_path: str = "data_cleaned.json") -> None:
     print("Json loaded.")
 
     session = Session()
+
+    keywords = defaultdict(Keyword)
+    groups = defaultdict(FlavorGroup)
+    wineries = defaultdict(Winery)
+    grapes = defaultdict(Grape)
+    countries = defaultdict(Country)
+    regions = defaultdict(Region)
+    wines_db = defaultdict(Wine)
+    vintages = defaultdict(Vintage)
+    top_lists = defaultdict(TopList)
+
     # Loop over each entry
     for i_entry, entry in enumerate(wines):
         print(f"Processing entry {i_entry+1}/{len(wines)}...")
@@ -41,130 +71,115 @@ def populate_database(json_path: str = "data_cleaned.json") -> None:
         flavors = wine_data["taste"]["flavor"]
         top_lists_data = vintage_data.get("top_list_rankings")
 
-        # --- Create keywords ---
         for i_group, group in enumerate(flavors):
-            # print(f"Entry {i_entry+1}/{len(wines)} | Processing flavor group {i_group+1}/{len(flavors)}...")
+            # Create group if not exists
+            groups[group["group"]] = FlavorGroup(
+                group_name=group["group"], wine_id=wine_data["id"]
+            )
+
             if group.get("primary_keywords"):
                 for keyword in group["primary_keywords"]:
-                    # Check if keyword already exists
-                    keyword_query = session.query(Keyword).filter_by(id=keyword["id"]).first()
-                    if not keyword_query:
-                        add_keyword = Keyword(id=keyword["id"], name=keyword["name"])
-                        session.add(add_keyword)
+                    # Create keyword if not exists
+                    keywords[keyword["id"]] = Keyword(
+                        id=keyword["id"],
+                        name=keyword["name"],
+                        count=keyword["count"],
+                        keyword_type="primary",
+                    )
             if group.get("secondary_keywords"):
                 for keyword in group["secondary_keywords"]:
-                    # Check if keyword already exists
-                    keyword_query = session.query(Keyword).filter_by(id=keyword["id"]).first()
-                    if not keyword_query:
-                        add_keyword = Keyword(id=keyword["id"], name=keyword["name"])
-                        session.add(add_keyword)
-
-            # --- Create Groups ---
-            # Check if group already exists
-            group_query = session.query(FlavorGroup).filter_by(group=group["group"]).first()
-            if not group_query:
-                add_flavor_group = FlavorGroup(group=group["group"])
-                session.add(add_flavor_group)
-
-        # --- Create Winery ---
-        # Check if winery already exists
-        winery_query = session.query(Winery).filter_by(id=wine_data["id"]).first()
-        if not winery_query:
-            add_winery = Winery(id=wine_data["id"], name=wine_data["name"])
-            session.add(add_winery)
-
-        # --- Create Grape ---
-        country_grapes = []
-        if country_data.get("must_used_grapes"):
-            for i_grape, grape in enumerate(country_data["must_used_grapes"]):
-                # print(f"Entry {i_entry+1}/{len(wines)} | Processing grape {i_grape+1}"
-                      # f"/{len(country_data['must_used_grapes'])}...")
-                # Check if grape already exists
-                grape_query = session.query(Grape).filter_by(id=grape["id"]).first()
-                if not grape_query:
-                    add_grape = Grape(
-                        id=grape["id"], name=grape["name"], wines_count=grape["wines_count"]
+                    # Create keyword if not exists
+                    keywords[keyword["id"]] = Keyword(
+                        id=keyword["id"],
+                        name=keyword["name"],
+                        count=keyword["count"],
+                        keyword_type="secondary",
                     )
-                    country_grapes.append(add_grape)
-                    session.add(add_grape)
 
-        # --- Create Country ---
-        # Check if country already exists
-        country_query = session.query(Country).filter_by(code=country_data["code"]).first()
-        if not country_query:
-            add_country = Country(
-                code=country_data["code"],
-                name=country_data["name"],
-                regions_count=country_data["regions_count"],
-                users_count=country_data["users_count"],
-                wines_count=country_data["wines_count"],
-                wineries_count=country_data["wineries_count"],
-                most_used_grapes=country_grapes,
-            )
-            session.add(add_country)
+        # Create winery if not exists
+        wineries[wine_data["id"]] = Winery(id=wine_data["id"], name=wine_data["name"])
 
-        # --- Create Region---
-        # Check if region already exists
-        region_query = session.query(Region).filter_by(id=region_data["id"]).first()
-        if not region_query:
-            add_region = Region(
-                id=region_data["id"],
-                name=region_data["name"],
-                country_code=country_data["code"],
-            )
-            session.add(add_region)
+        country_grapes = []
+        if country_data.get("most_used_grapes"):
+            for i_grape, grape in enumerate(country_data["most_used_grapes"]):
+                # Create grape if not exists
+                grapes[grape["id"]] = Grape(
+                    id=grape["id"], name=grape["name"], wines_count=grape["wines_count"]
+                )
+                country_grapes.append(grapes[grape["id"]])
 
-        # --- Create Wine ---
-        # Check if wine already exists
-        wine_query = session.query(Wine).filter_by(id=wine_data["id"]).first()
-        if not wine_query:
-            add_wine = Wine(
-                id=wine_data["id"],
-                name=wine_data["name"],
-                is_natural=wine_data["is_natural"],
-                region_id=region_data["id"],
-                winery_id=winery_data["id"],
-                acidity=taste_data["acidity"] if taste_data else None,
-                fizziness=taste_data["fizziness"] if taste_data else None,
-                intensity=taste_data["intensity"] if taste_data else None,
-                sweetness=taste_data["sweetness"] if taste_data else None,
-                tannin=taste_data["tannin"] if taste_data else None,
-                user_structure_count=taste_data["user_structure_count"] if taste_data else None,
-            )
-            session.add(add_wine)
-        else:
-            add_wine = wine_query
+        # Create country if not exists
+        countries[country_data["code"]] = Country(
+            code=country_data["code"],
+            name=country_data["name"],
+            regions_count=country_data["regions_count"],
+            users_count=country_data["users_count"],
+            wines_count=country_data["wines_count"],
+            wineries_count=country_data["wineries_count"],
+            most_used_grapes=country_grapes,
+        )
 
-        # --- Create Vintage ---
-        # Check if vintage already exists
-        vintage_query = session.query(Vintage).filter_by(id=vintage_data["id"]).first()
-        if not vintage_query:
-            add_vintage = Vintage(
-                id=vintage_data["id"], name=vintage_data["name"], wine_id=wine_data["id"]
-            )
-            session.add(add_vintage)
+        # Create region if not exists
+        regions[region_data["id"]] = Region(
+            id=region_data["id"],
+            name=region_data["name"],
+            country_code=country_data["code"],
+        )
 
-        # --- Create Toplist---
+        # Create wine if not exists
+        wines_db[wine_data["id"]] = Wine(
+            id=wine_data["id"],
+            name=wine_data["name"],
+            is_natural=wine_data["is_natural"],
+            region_id=region_data["id"],
+            winery_id=winery_data["id"],
+            ratings_average=wine_data["statistics"]["ratings_average"],
+            ratings_count=wine_data["statistics"]["ratings_count"],
+            url=wine_data["url"],
+            acidity=taste_data["acidity"] if taste_data else None,
+            fizziness=taste_data["fizziness"] if taste_data else None,
+            intensity=taste_data["intensity"] if taste_data else None,
+            sweetness=taste_data["sweetness"] if taste_data else None,
+            tannin=taste_data["tannin"] if taste_data else None,
+            user_structure_count=taste_data["user_structure_count"] if taste_data else None,
+        )
+
+        # Create vintage if not exists
+        vintages[vintage_data["id"]] = Vintage(
+            id=vintage_data["id"],
+            name=vintage_data["name"],
+            wine_id=wine_data["id"],
+            ratings_average=vintage_data["statistics"]["ratings_average"],
+            ratings_count=vintage_data["statistics"]["ratings_count"],
+            year=vintage_data["year"],
+            price_euros=price_data["amount_in_euros"] if price_data else None,
+            price_discounted_from=price_data["discounted_from"] if price_data else None,
+            price_discount_percentage=price_data["discount_percent"] if price_data else None,
+            bottle_volume_ml=price_data.get("bottle_volume_ml"),
+        )
+
         if top_lists_data:
             for i_top_list, top_list in enumerate(top_lists_data):
-                # print(f"Entry {i_entry+1}/{len(wines)} | Processing top list {i_top_list+1}/{len(top_lists_data)}...")
-                # Check if top list already exists
-                top_list_query = session.query(TopList).filter_by(id=top_list["top_list"]["id"]).first()
+                # Create top list if not exists
+                top_lists[top_list["top_list"]["id"]] = TopList(
+                    id=top_list["top_list"]["id"],
+                    name=top_list["top_list"]["name"],
+                    # TODO: To be update to append instead of overwrite
+                    wines=[wines_db[wine_data["id"]] if wines_db[wine_data["id"]] else None],
+                )
 
-                if not top_list_query:
-                    add_top_list = TopList(
-                        id=top_list["top_list"]["id"],
-                        name=top_list["top_list"]["name"],
-                        # TODO: To be update to append instead of overwrite
-                        wines=[add_wine if add_wine else None],
-                    )
-                    session.add(add_top_list)
-
-        #print(f"Entry {i_entry+1}/{len(wines)} | Adding wine to DB...")
-        # Commit the session to write the changes to the database
-        session.commit()
-        #print(f"Entry {i_entry+1}/{len(wines)} | done")
+    # Bulk insertion
+    objects_to_insert = [keywords, groups, wineries, grapes, countries, regions, wines_db, vintages, top_lists]
+    print("Bulk inserting data...")
+    for i, objects in enumerate(objects_to_insert):
+        print(f"Inserting {len(objects)} objects | Query: {i}/{len(objects_to_insert)}...")
+        session.bulk_save_objects(objects.values())
+    # Commit the session to write the changes to the database
+    print("Objects inserted. Committing...")
+    session.commit()
+    print("Done.")
 
 
 if __name__ == "__main__":
+    # Average time to insert 79k wines: 2min 50s
     populate_database()
