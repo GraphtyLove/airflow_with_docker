@@ -133,10 +133,10 @@ def populate_database(json_path: str = "data_cleaned.json") -> None:
                 )
                 session.add(add_top_list)
 
-    print("Adding wine to DB...")
-    # Commit the session to write the changes to the database
-    session.commit()
-    print("done")
+        print(f"Entry {i_entry+1}/{len(wines)} | Adding wine to DB...")
+        # Commit the session to write the changes to the database
+        session.commit()
+        print(f"Entry {i_entry+1}/{len(wines)} | done")
 
 
 if __name__ == "__main__":
