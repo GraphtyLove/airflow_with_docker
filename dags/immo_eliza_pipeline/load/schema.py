@@ -109,6 +109,7 @@ class TopList(Base):
 
 
 if __name__ == "__main__":
+    print("Creating DB...")
     engine = create_engine("sqlite:///vivino.db", echo=True)
-    meta = MetaData()
-    meta.create_all(engine)
+    Base.metadata.create_all(engine)
+    print("DB created!")
