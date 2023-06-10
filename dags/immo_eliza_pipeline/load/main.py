@@ -199,6 +199,6 @@ def populate_database(json_path: str = "data_cleaned.json") -> None:
 
 
 if __name__ == "__main__":
-    # Average time to insert ~79k wines: ~2min 50s WITHOUT keywords
-    # Average time to insert ~79k wines: ~4min 50s WITH keywords
+    # Average time to process/insert ~79k wines from json to sqlite: ~2min 50s WITHOUT keywords
+    # Average time to process/insert ~79k wines from json to sqlite: ~4min 50s WITH keywords
     populate_database()
