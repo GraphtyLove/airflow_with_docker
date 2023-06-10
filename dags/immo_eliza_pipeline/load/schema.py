@@ -13,13 +13,13 @@ from sqlalchemy.orm import relationship, declarative_base
 
 Base = declarative_base()
 
-# ------ Define the Association Tables ------
-toplist_wine = Table(
-    "toplist_wine",
-    Base.metadata,
-    Column("toplist_id", Integer, ForeignKey("toplists.id"), primary_key=True),
-    Column("wine_id", Integer, ForeignKey("wines.id"), primary_key=True),
-)
+# # ------ Define the Association Tables ------
+# toplist_wine = Table(
+#     "toplist_wine",
+#     Base.metadata,
+#     Column("toplist_id", Integer, ForeignKey("toplists.id"), primary_key=True),
+#     Column("wine_id", Integer, ForeignKey("wines.id"), primary_key=True),
+# )
 
 
 # ------ Define Tables schemas ------
@@ -76,7 +76,6 @@ class Wine(Base):
     sweetness = Column(Float)
     tannin = Column(Float)
     user_structure_count = Column(Integer)
-    toplists = relationship("TopList", secondary=toplist_wine, back_populates="wines")
 
 
 class Vintage(Base):
@@ -93,23 +92,15 @@ class Vintage(Base):
     bottle_volume_ml = Column(Integer)
 
 
-class Keyword(Base):
-    __tablename__ = "keywords"
-    id = Column(Integer, primary_key=True)
-    name = Column(String)
-
-
 class FlavorGroup(Base):
     __tablename__ = "flavor_groups"
     name = Column(String, primary_key=True)
 
 
-class TopList(Base):
-    __tablename__ = "toplists"
-
+class Keyword(Base):
+    __tablename__ = "keywords"
     id = Column(Integer, primary_key=True)
-    name = Column(String(255), nullable=False)
-    wines = relationship("Wine", secondary="toplist_wine", back_populates="toplists")
+    name = Column(String)
 
 
 class WineKeywords(Base):
@@ -119,6 +110,24 @@ class WineKeywords(Base):
     group_name = Column(String, primary_key=True)
     keyword_type = Column(String)
     count = Column(Integer)
+
+
+class TopList(Base):
+    __tablename__ = "toplists"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(255), nullable=False)
+    country_code = Column(String, ForeignKey("countries.code"))
+
+
+class VintageTopListsRankings(Base):
+    __tablename__ = "vintage_toplists_rankings"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    top_list_id = Column(Integer, ForeignKey("toplists.id"))
+    vintage_id = Column(Integer, ForeignKey("vintages.id"))
+    rank = Column(Integer)
+    previous_rank = Column(Integer)
 
 
 if __name__ == "__main__":

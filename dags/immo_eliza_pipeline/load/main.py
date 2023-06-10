@@ -14,7 +14,8 @@ from dags.immo_eliza_pipeline.load.schema import (
     FlavorGroup,
     TopList,
     WineKeywords,
-    MostUsedGrapesPerCountry
+    MostUsedGrapesPerCountry,
+    VintageTopListsRankings
 )
 
 # Initiate a session
@@ -61,6 +62,7 @@ def populate_database(json_path: str = "data_cleaned.json") -> None:
     top_lists = defaultdict(TopList)
     keywords_wine = defaultdict(WineKeywords)
     most_used_grapes_per_country = defaultdict(MostUsedGrapesPerCountry)
+    vintage_top_lists_rankings = defaultdict(VintageTopListsRankings)
 
     # Loop over each entry
     for i_entry, entry in enumerate(wines):
@@ -175,18 +177,27 @@ def populate_database(json_path: str = "data_cleaned.json") -> None:
         )
 
         if top_lists_data:
-            for i_top_list, top_list in enumerate(top_lists_data):
-                # Create top list if not exists
-                top_lists[top_list["top_list"]["id"]] = TopList(
-                    id=top_list["top_list"]["id"],
-                    name=top_list["top_list"]["name"],
-                    # TODO: To be update to append instead of overwrite
-                    wines=[wines_db[wine_data["id"]] if wines_db[wine_data["id"]] else None],
+            for top_list_ranking in top_lists_data:
+                # Create top_list if not exists
+                country_code = top_list_ranking["top_list"]["location"].split("_")[0]
+                top_lists[top_list_ranking["top_list"]["id"]] = TopList(
+                    id=top_list_ranking["top_list"]["id"],
+                    name=top_list_ranking["top_list"]["name"],
+                    country_code=country_code if country_code else "global",
+                )
+                # Add top_list to vintage_top_lists_rankings
+                vintage_top_lists_rankings[f"{top_list_ranking['top_list']['id']}-{vintage_data['id']}"] = \
+                    VintageTopListsRankings(
+                    top_list_id=top_list_ranking["top_list"]['id'],
+                    vintage_id=vintage_data["id"],
+                    rank=top_list_ranking["rank"],
+                    previous_rank=top_list_ranking["previous_rank"],
                 )
 
     # Bulk insertion
     objects_to_insert = [
-        keywords, groups, wineries, grapes, countries, regions, wines_db, vintages, top_lists, keywords_wine, most_used_grapes_per_country
+        keywords, groups, wineries, grapes, countries, regions, wines_db, vintages, top_lists, keywords_wine,
+        most_used_grapes_per_country, vintage_top_lists_rankings
     ]
     print("Bulk inserting data...")
     for i, objects in enumerate(objects_to_insert):
@@ -201,4 +212,5 @@ def populate_database(json_path: str = "data_cleaned.json") -> None:
 if __name__ == "__main__":
     # Average time to process/insert ~79k wines from json to sqlite: ~2min 50s WITHOUT keywords
     # Average time to process/insert ~79k wines from json to sqlite: ~4min 50s WITH keywords
+    # Average time to process/insert ~79k wines from json to sqlite: 5min 10s WITH keywords and top lists
     populate_database()
