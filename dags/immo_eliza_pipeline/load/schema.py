@@ -44,7 +44,6 @@ class Grape(Base):
     __tablename__ = "grapes"
     id = Column(Integer, primary_key=True)
     name = Column(String)
-    wines_count = Column(Integer)
 
 
 class MostUsedGrapesPerCountry(Base):
@@ -52,6 +51,7 @@ class MostUsedGrapesPerCountry(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     country_code = Column(String, ForeignKey("countries.code"))
     grape_id = Column(Integer, ForeignKey("grapes.id"))
+    wines_count = Column(Integer)
 
 
 class Winery(Base):

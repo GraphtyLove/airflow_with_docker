@@ -119,12 +119,13 @@ def populate_database(json_path: str = "data_cleaned.json") -> None:
             for i_grape, grape in enumerate(country_data["most_used_grapes"]):
                 # Create grape if not exists
                 grapes[grape["id"]] = Grape(
-                    id=grape["id"], name=grape["name"], wines_count=grape["wines_count"]
+                    id=grape["id"], name=grape["name"]
                 )
                 # Add grape to most_used_grapes_per_country
                 most_used_grapes_per_country[f"{grape['id']}-{country_data['code']}"] = MostUsedGrapesPerCountry(
                     grape_id=grape["id"],
                     country_code=country_data["code"],
+                    wines_count=grape["wines_count"],
                 )
 
         # Create country if not exists
