@@ -31,7 +31,6 @@ class Country(Base):
     users_count = Column(Integer)
     wines_count = Column(Integer)
     wineries_count = Column(Integer)
-    most_used_grapes = relationship("Grape")
 
 
 class Region(Base):
@@ -46,7 +45,13 @@ class Grape(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String)
     wines_count = Column(Integer)
+
+
+class MostUsedGrapesPerCountry(Base):
+    __tablename__ = "most_used_grapes_per_country"
+    id = Column(Integer, primary_key=True, autoincrement=True)
     country_code = Column(String, ForeignKey("countries.code"))
+    grape_id = Column(Integer, ForeignKey("grapes.id"))
 
 
 class Winery(Base):
@@ -72,7 +77,6 @@ class Wine(Base):
     tannin = Column(Float)
     user_structure_count = Column(Integer)
     toplists = relationship("TopList", secondary=toplist_wine, back_populates="wines")
-    flavor_groups = relationship("FlavorGroup", backref="wine")
 
 
 class Vintage(Base):
@@ -93,24 +97,11 @@ class Keyword(Base):
     __tablename__ = "keywords"
     id = Column(Integer, primary_key=True)
     name = Column(String)
-    count = Column(Integer)
-    keyword_type = Column(String) # primary or secondary
-    flavor_group_id = Column(Integer, ForeignKey('flavor_groups.id'))
-
-    # relationship to FlavorGroup
-    flavor_group = relationship("FlavorGroup", back_populates="keywords")
 
 
 class FlavorGroup(Base):
     __tablename__ = "flavor_groups"
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    group_name = Column(String)
-    wine_id = Column(Integer, ForeignKey('wines.id'))
-    # Relationships
-    wines = relationship("Wine", back_populates="flavor_groups")
-    keywords = relationship("Keyword", back_populates="flavor_group")
-    # primary_keywords = relationship("Keyword", secondary=flavor_group_keywords, backref="primary_flavor_groups")
-    # secondary_keywords = relationship("Keyword", secondary=flavor_group_keywords, backref="secondary_flavor_groups")
+    name = Column(String, primary_key=True)
 
 
 class TopList(Base):
@@ -119,6 +110,15 @@ class TopList(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(255), nullable=False)
     wines = relationship("Wine", secondary="toplist_wine", back_populates="toplists")
+
+
+class WineKeywords(Base):
+    __tablename__ = "keywords_wine"
+    keyword_id = Column(Integer, ForeignKey("keywords.id"), primary_key=True)
+    wine_id = Column(Integer, ForeignKey("wines.id"), primary_key=True)
+    group_name = Column(String, primary_key=True)
+    keyword_type = Column(String)
+    count = Column(Integer)
 
 
 if __name__ == "__main__":

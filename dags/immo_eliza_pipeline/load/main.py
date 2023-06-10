@@ -13,6 +13,8 @@ from dags.immo_eliza_pipeline.load.schema import (
     Keyword,
     FlavorGroup,
     TopList,
+    WineKeywords,
+    MostUsedGrapesPerCountry
 )
 
 # Initiate a session
@@ -57,6 +59,8 @@ def populate_database(json_path: str = "data_cleaned.json") -> None:
     wines_db = defaultdict(Wine)
     vintages = defaultdict(Vintage)
     top_lists = defaultdict(TopList)
+    keywords_wine = defaultdict(WineKeywords)
+    most_used_grapes_per_country = defaultdict(MostUsedGrapesPerCountry)
 
     # Loop over each entry
     for i_entry, entry in enumerate(wines):
@@ -73,9 +77,7 @@ def populate_database(json_path: str = "data_cleaned.json") -> None:
 
         for i_group, group in enumerate(flavors):
             # Create group if not exists
-            groups[group["group"]] = FlavorGroup(
-                group_name=group["group"], wine_id=wine_data["id"]
-            )
+            groups[group["group"]] = FlavorGroup(name=group["group"])
 
             if group.get("primary_keywords"):
                 for keyword in group["primary_keywords"]:
@@ -83,30 +85,45 @@ def populate_database(json_path: str = "data_cleaned.json") -> None:
                     keywords[keyword["id"]] = Keyword(
                         id=keyword["id"],
                         name=keyword["name"],
-                        count=keyword["count"],
-                        keyword_type="primary",
                     )
+                    # Add keyword to keywords_wine
+                    keywords_wine[f"{keyword['id']}-{wine_data['id']}-{group['group']}"] = WineKeywords(
+                        keyword_id=keyword["id"],
+                        wine_id=wine_data["id"],
+                        group_name=group["group"],
+                        keyword_type="primary",
+                        count=keyword["count"],
+                    )
+
             if group.get("secondary_keywords"):
                 for keyword in group["secondary_keywords"]:
                     # Create keyword if not exists
                     keywords[keyword["id"]] = Keyword(
                         id=keyword["id"],
                         name=keyword["name"],
-                        count=keyword["count"],
-                        keyword_type="secondary",
                     )
-
+                    # Add keyword to keywords_wine
+                    keywords_wine[f"{keyword['id']}-{wine_data['id']}-{group['group']}"] = WineKeywords(
+                        keyword_id=keyword["id"],
+                        wine_id=wine_data["id"],
+                        group_name=group["group"],
+                        keyword_type="secondary",
+                        count=keyword["count"],
+                    )
         # Create winery if not exists
         wineries[wine_data["id"]] = Winery(id=wine_data["id"], name=wine_data["name"])
 
-        country_grapes = []
         if country_data.get("most_used_grapes"):
             for i_grape, grape in enumerate(country_data["most_used_grapes"]):
                 # Create grape if not exists
                 grapes[grape["id"]] = Grape(
                     id=grape["id"], name=grape["name"], wines_count=grape["wines_count"]
                 )
-                country_grapes.append(grapes[grape["id"]])
+                # Add grape to most_used_grapes_per_country
+                most_used_grapes_per_country[f"{grape['id']}-{country_data['code']}"] = MostUsedGrapesPerCountry(
+                    grape_id=grape["id"],
+                    country_code=country_data["code"],
+                )
 
         # Create country if not exists
         countries[country_data["code"]] = Country(
@@ -116,7 +133,6 @@ def populate_database(json_path: str = "data_cleaned.json") -> None:
             users_count=country_data["users_count"],
             wines_count=country_data["wines_count"],
             wineries_count=country_data["wineries_count"],
-            most_used_grapes=country_grapes,
         )
 
         # Create region if not exists
@@ -169,7 +185,9 @@ def populate_database(json_path: str = "data_cleaned.json") -> None:
                 )
 
     # Bulk insertion
-    objects_to_insert = [keywords, groups, wineries, grapes, countries, regions, wines_db, vintages, top_lists]
+    objects_to_insert = [
+        keywords, groups, wineries, grapes, countries, regions, wines_db, vintages, top_lists, keywords_wine, most_used_grapes_per_country
+    ]
     print("Bulk inserting data...")
     for i, objects in enumerate(objects_to_insert):
         print(f"Inserting {len(objects)} objects | Query: {i}/{len(objects_to_insert)}...")
@@ -181,5 +199,6 @@ def populate_database(json_path: str = "data_cleaned.json") -> None:
 
 
 if __name__ == "__main__":
-    # Average time to insert 79k wines: 2min 50s
+    # Average time to insert ~79k wines: ~2min 50s WITHOUT keywords
+    # Average time to insert ~79k wines: ~4min 50s WITH keywords
     populate_database()
