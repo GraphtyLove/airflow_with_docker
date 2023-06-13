@@ -3,9 +3,6 @@ import json
 import time
 import os
 from price_range_extractor import get_price_ranges, is_cached_price_ranges_valide, load_cached_price_ranges
-# import itertools
-# from tqdm.contrib.concurrent import thread_map
-# from functools import partial
 
 
 WINE_PER_PAGE = 50
@@ -70,9 +67,6 @@ if __name__ == "__main__":
                     wines.extend(wine)
                     time.sleep(0.3)
                     
-                    # partial_wine_getter = partial(get_wines_from_page, session=sess, min_rating=min_rating, min_price=min_price, max_price=max_price, language=language)
-                    # wines_gen = thread_map(partial_wine_getter, range(1, total_pages+1), max_workers=64)
-                    # wines = list(itertools.chain.from_iterable(wines))
             except Exception as ex:
                 print("Fatal error while scraping: ", ex)
             price_range_index += 1
