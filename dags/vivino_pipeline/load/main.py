@@ -1,9 +1,10 @@
 import json
 import time
+import os
 from collections import defaultdict
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from dags.immo_eliza_pipeline.load.schema import (
+from dags.vivino_pipeline.load.schema import (
     Country,
     Region,
     Grape,
@@ -43,7 +44,6 @@ def execution_time_decorator(func):
 def populate_database(json_path: str = "data_cleaned.json") -> None:
     print("Populating database...")
     print("Loading json...")
-    # Load json
     with open(json_path, "r") as file:
         wines = json.load(file)
     print("Json loaded.")
@@ -109,7 +109,7 @@ def populate_database(json_path: str = "data_cleaned.json") -> None:
                         count=keyword["count"],
                     )
         # Create winery if not exists
-        wineries[wine_data["id"]] = Winery(id=wine_data["id"], name=wine_data["name"])
+        wineries[winery_data["id"]] = Winery(id=winery_data["id"], name=winery_data["name"])
 
         if country_data.get("most_used_grapes"):
             for i_grape, grape in enumerate(country_data["most_used_grapes"]):

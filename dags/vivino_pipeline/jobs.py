@@ -1,12 +1,7 @@
 from datetime import datetime, timedelta
 from airflow import DAG
-from airflow.operators.bash_operator import BashOperator
 from airflow.operators.docker_operator import DockerOperator
-from airflow.operators.python_operator import BranchPythonOperator
 from airflow.operators.dummy_operator import DummyOperator
-from dotenv import load_dotenv
-
-load_dotenv(".env")
 
 
 default_args = {
@@ -21,12 +16,13 @@ default_args = {
 }
 
 
-
-
 with DAG('vivino-etl-pipeline', default_args=default_args, schedule_interval="30 * * * *", catchup=False) as dag:
+    
+    # Sanatize the run_id as by default, it contains characters like ":" or "/"
+    # Which couldn't be used for docker volume names
+    run_id_sanatized = "{{run_id}}".replace(":", "").replace("/", "").replace(".", "")
     # Create a shared volume that can be used by all the tasks
     SHARED_DOCKER_VOLUME = "/tmp/{{run_id}}:/tmp/shared_datadata"    
-
 
     start_dag = DummyOperator(task_id='start_dag')
     end_dag = DummyOperator(task_id='end_dag')        
@@ -67,5 +63,6 @@ with DAG('vivino-etl-pipeline', default_args=default_args, schedule_interval="30
 	    volumes=[SHARED_DOCKER_VOLUME]
     )
 
-    # Pipeline order
+
+    # ----- Pipeline order definition -----
     start_dag >> extract_task >> transform_task >> load_task >> end_dag
