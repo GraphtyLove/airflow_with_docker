@@ -11,7 +11,6 @@ from dags.immo_eliza_pipeline.load.schema import (
     Wine,
     Vintage,
     Keyword,
-    FlavorGroup,
     TopList,
     WineKeywords,
     MostUsedGrapesPerCountry,
@@ -52,7 +51,6 @@ def populate_database(json_path: str = "data_cleaned.json") -> None:
     session = Session()
 
     keywords = defaultdict(Keyword)
-    groups = defaultdict(FlavorGroup)
     wineries = defaultdict(Winery)
     grapes = defaultdict(Grape)
     countries = defaultdict(Country)
@@ -78,8 +76,6 @@ def populate_database(json_path: str = "data_cleaned.json") -> None:
         top_lists_data = vintage_data.get("top_list_rankings")
 
         for i_group, group in enumerate(flavors):
-            # Create group if not exists
-            groups[group["group"]] = FlavorGroup(name=group["group"])
 
             if group.get("primary_keywords"):
                 for keyword in group["primary_keywords"]:
@@ -197,7 +193,7 @@ def populate_database(json_path: str = "data_cleaned.json") -> None:
 
     # Bulk insertion
     objects_to_insert = [
-        keywords, groups, wineries, grapes, countries, regions, wines_db, vintages, top_lists, keywords_wine,
+        keywords, wineries, grapes, countries, regions, wines_db, vintages, top_lists, keywords_wine,
         most_used_grapes_per_country, vintage_top_lists_rankings
     ]
     print("Bulk inserting data...")

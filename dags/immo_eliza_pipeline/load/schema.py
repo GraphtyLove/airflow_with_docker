@@ -92,11 +92,6 @@ class Vintage(Base):
     bottle_volume_ml = Column(Integer)
 
 
-class FlavorGroup(Base):
-    __tablename__ = "flavor_groups"
-    name = Column(String, primary_key=True)
-
-
 class Keyword(Base):
     __tablename__ = "keywords"
     id = Column(Integer, primary_key=True)
