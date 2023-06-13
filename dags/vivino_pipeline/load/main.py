@@ -198,7 +198,7 @@ def populate_database(json_path: str = "data_cleaned.json") -> None:
     ]
     print("Bulk inserting data...")
     for i, objects in enumerate(objects_to_insert):
-        print(f"Inserting {len(objects)} objects | Query: {i}/{len(objects_to_insert)}...")
+        print(f"Inserting {len(objects)} objects | Query: {i+1}/{len(objects_to_insert)}...")
         session.bulk_save_objects(objects.values())
     # Commit the session to write the changes to the database
     print("Objects inserted. Committing...")
