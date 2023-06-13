@@ -20,8 +20,14 @@ default_args = {
     'retry_delay'           : timedelta(minutes=5)
 }
 
+
+
+
 with DAG('vivino-etl-pipeline', default_args=default_args, schedule_interval="30 * * * *", catchup=False) as dag:
-    
+    # Create a shared volume that can be used by all the tasks
+    SHARED_DOCKER_VOLUME = "/tmp/{{run_id}}:/tmp/shared_datadata"    
+
+
     start_dag = DummyOperator(task_id='start_dag')
     end_dag = DummyOperator(task_id='end_dag')        
         
@@ -34,10 +40,7 @@ with DAG('vivino-etl-pipeline', default_args=default_args, schedule_interval="30
         # command="/bin/sleep 30",
         docker_url="unix://var/run/docker.sock",
         network_mode="bridge",
-	    environement={
-            "AZURE_CONNECTION_STRING": os.getenv("AZURE_CONNECTION_STRING"),
-            "STORAGE_CONTAINER": os.getenv("STORAGE_CONTAINER")
-	    }
+        volumes=[SHARED_DOCKER_VOLUME]
     )
 
     transform_task = DockerOperator(
@@ -49,10 +52,7 @@ with DAG('vivino-etl-pipeline', default_args=default_args, schedule_interval="30
         # command="/bin/sleep 30",
         docker_url="unix://var/run/docker.sock",
         network_mode="bridge",
-	    environement={
-            "AZURE_CONNECTION_STRING": os.getenv("AZURE_CONNECTION_STRING"),
-            "STORAGE_CONTAINER": os.getenv("STORAGE_CONTAINER")
-	    }
+        volumes=[SHARED_DOCKER_VOLUME]
     )
     
     load_task = DockerOperator(
@@ -64,10 +64,7 @@ with DAG('vivino-etl-pipeline', default_args=default_args, schedule_interval="30
         # command="/bin/sleep 30",
         docker_url="unix://var/run/docker.sock",
         network_mode="bridge",
-	    environement={
-            "AZURE_CONNECTION_STRING": os.getenv("AZURE_CONNECTION_STRING"),
-            "STORAGE_CONTAINER": os.getenv("STORAGE_CONTAINER")
-	    }
+	    volumes=[SHARED_DOCKER_VOLUME]
     )
 
     # Pipeline order

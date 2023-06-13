@@ -8,6 +8,7 @@ HARD_LIMIT = 2000
 HEADER = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
 }
+saving_path = os.environ.get("DATA_SHARED_PATH", "")
 
 
 def get_number_of_matches(
@@ -79,10 +80,9 @@ def get_price_ranges(
 
     return price_ranges
 
-# TODO: Remove e
 def is_cached_price_ranges_valide() -> bool:
     price_range_to_update = []
-    with open("price_ranges.csv", "r") as file:
+    with open(os.path.join(saving_path, "price_ranges.csv"), "r") as file:
         price_ranges = csv.reader(file)
         # Skip the first csv line (headers)
         next(price_ranges)
@@ -102,7 +102,7 @@ def is_cached_price_ranges_valide() -> bool:
 
 
 def load_cached_price_ranges() -> List[List[float | int]]:
-    with open("price_ranges.csv", "r") as file:
+    with open(os.path.join(saving_path, "price_ranges.csv"), "r") as file:
         csv_reader = csv.reader(file)
         # Skip the first csv line (headers)
         next(csv_reader)

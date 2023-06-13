@@ -10,7 +10,7 @@ from price_range_extractor import get_price_ranges, is_cached_price_ranges_valid
 
 WINE_PER_PAGE = 50
 HEADER = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"}
-
+saving_path = os.environ.get("DATA_SHARED_PATH", "")
 
 def get_wines_from_page(
     page_number: int = 1,
@@ -53,7 +53,7 @@ if __name__ == "__main__":
     wines = []
 
     # If the first condition is met, won't check for the second
-    if not os.path.isfile('price_ranges.csv') or not is_cached_price_ranges_valide():
+    if not os.path.isfile(os.path.join(saving_path, 'price_ranges.csv') or not is_cached_price_ranges_valide():
         price_ranges = get_price_ranges()
     else:
         price_ranges = load_cached_price_ranges()
@@ -78,6 +78,7 @@ if __name__ == "__main__":
             price_range_index += 1
 
     print("all done! Saving results...")
-    with open("data.json", "w") as f:
+    
+    with open(os.path.join(saving_path, "data.json"), "w") as f:
         json.dump(wines, f)
     print("results saved!")

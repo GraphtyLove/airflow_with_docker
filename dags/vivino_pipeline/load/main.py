@@ -207,7 +207,10 @@ def populate_database(json_path: str = "data_cleaned.json") -> None:
 
 
 if __name__ == "__main__":
+    saving_path = os.environ.get("DATA_SHARED_PATH", "")
+    data_path = os.path.join(saving_path, "data_cleaned.json")
+    
     # Average time to process/insert ~79k wines from json to sqlite: ~2min 50s WITHOUT keywords
     # Average time to process/insert ~79k wines from json to sqlite: ~4min 50s WITH keywords
     # Average time to process/insert ~79k wines from json to sqlite: 5min 10s WITH keywords and top lists
-    populate_database()
+    populate_database(data_path)

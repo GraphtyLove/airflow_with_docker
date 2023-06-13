@@ -1,7 +1,8 @@
 import json
 import os
-
-with open("../../../data.json") as f:
+    
+saving_path = os.environ.get("DATA_SHARED_PATH", "")
+with open(os.path.join(saving_path, "data.json")) as f:
     wines = json.load(f)
 
 print(f"Found {len(wine_search)} wines.")
@@ -36,6 +37,6 @@ for i, wine in enumerate(wines):
 print("done")
 
 print("all done! Saving results...")
-with open("../../../data_cleaned.json", "w") as f:
+with open(os.path.join(saving_path, "data_cleaned.json"), "w") as f:
     json.dump(wines, f)
 print("results saved!")
